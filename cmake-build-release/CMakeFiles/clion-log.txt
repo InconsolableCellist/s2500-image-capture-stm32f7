@@ -1,0 +1,5 @@
+/home/offipso/Programs/clion-212.4746.15/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_DEPENDS_USE_COMPILER=FALSE -G "CodeBlocks - Unix Makefiles" /home/offipso/Programs/arduino/stm32/s2500-image-capture-f7
+-- Maximum optimization for speed
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/cmake-build-release
