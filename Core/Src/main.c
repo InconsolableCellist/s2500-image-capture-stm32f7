@@ -154,7 +154,10 @@ int main(void)
               status_code_buffer[2] = ((uint16_t)__HAL_TIM_GET_COUNTER(&htim7));
               status_code_buffer[3] = (uint16_t)current_adc_mode;
 
-              CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2);
+              if (CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2) != USBD_OK) {
+                DEBUG_HIGH
+                DEBUG_LOW
+              }
               HAL_ADC_Start_DMA(&hadc1, cur_buf, BUF_SIZE);
           } else {
               // X or Y pulse happening
