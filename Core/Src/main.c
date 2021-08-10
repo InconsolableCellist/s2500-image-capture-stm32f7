@@ -31,17 +31,17 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 #define BUF_SIZE 1024
-#define STATUS_BUF_SIZE 4
+#define STATUS_BUF_SIZE 6
 
 // Flow control
-uint8_t switch_pressed = 0;
-uint8_t tim7_overflow = 0;
+uint8_t mode_switch_requested = 0;
 uint8_t pulse_fired = 0;
 uint8_t adc_int = 0;
 uint8_t usb_transfer_complete = 1;
-uint8_t current_adc_mode = ADC_CUSTOM_SPEED_HALF;
+uint8_t current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS;
 
 // Data buffers
+uint16_t tim7_overflow = 0;
 uint16_t* buffer0;
 uint16_t* buffer1;
 volatile uint16_t* cur_buf = NULL;
@@ -62,6 +62,7 @@ uint16_t* status_code_buffer;
 ADC_HandleTypeDef hadc1;
 DMA_HandleTypeDef hdma_adc1;
 
+TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
 
 /* USER CODE BEGIN PV */
@@ -74,6 +75,7 @@ static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM7_Init(void);
+static void MX_TIM6_Init(void);
 /* USER CODE BEGIN PFP */
 void SystemClock_SwitchToPLL(void);
 
@@ -126,11 +128,11 @@ int main(void)
   MX_ADC1_Init();
   MX_TIM7_Init();
   MX_USB_DEVICE_Init();
+  MX_TIM6_Init();
   /* USER CODE BEGIN 2 */
   HAL_ADC_Stop_DMA(&hadc1);
   ADC_SwitchSamplingMode(&hadc1, current_adc_mode);
   HAL_ADC_Start_DMA(&hadc1, (uint32_t*)cur_buf, BUF_SIZE);
-
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -144,33 +146,48 @@ int main(void)
           // Measures the duration of X and/or Y pulses and starts/stops data collection
           pulse_fired = 0;
           if (htim7.Instance->CR1 & TIM_CR1_CEN) {
-              // Stop counting and start saving data
+              // Stop counting the last pulse, transmit some status bytes, start counting row time, and start saving data
               HAL_TIM_Base_Stop_IT(&htim7);
 
               // how to calculate duration in seconds:
               // pulse_time = ((double)tim7_overflow / 16) + ((double)__HAL_TIM_GET_COUNTER(&htim7) / 1000000);
+              // row_time   = ((double)tim7_overflow / 16) + ((double)__HAL_TIM_GET_COUNTER(&htim7) / 1000000);
               status_code_buffer[0] = 0xFEFE;
-              status_code_buffer[1] = (uint16_t)tim7_overflow;
+              status_code_buffer[1] = tim7_overflow;
               status_code_buffer[2] = ((uint16_t)__HAL_TIM_GET_COUNTER(&htim7));
               status_code_buffer[3] = (uint16_t)current_adc_mode;
+              // [4] and [5] set in the pulse code, tim7_overflow and the __HAL_TIM_GET_COUNTER, respectively
 
               if (CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2) != USBD_OK) {
-                DEBUG_HIGH
-                DEBUG_LOW
+                DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
               }
-              HAL_ADC_Start_DMA(&hadc1, cur_buf, BUF_SIZE);
+
+              // Start timing the row
+              __HAL_TIM_SET_COUNTER(&htim7, 0);
+              tim7_overflow = 0;
+              HAL_TIM_Base_Start_IT(&htim7);
+
+              HAL_ADC_Start_DMA(&hadc1, (uint32_t*)cur_buf, BUF_SIZE);
           } else {
               // X or Y pulse happening
 
               // It's possible on startup/reset/external reset to think we're ready to measure a low pulse,
-              // but the signal is high. Prevent that by checking pin state
+              // but the signal is high. Prevent that by always checking pin state
               if (HAL_GPIO_ReadPin(XY_PULSE_GPIO_Port, XY_PULSE_Pin) == GPIO_PIN_RESET) {
-                  // Stop data collection and begin measuring a low pulse
+                  // Stop data collection, stop the timer and record the last row time, and begin measuring a low pulse
                   HAL_ADC_Stop_DMA(&hadc1);
+                  HAL_TIM_Base_Stop_IT(&htim7);
+                  status_code_buffer[4] = tim7_overflow;
+                  status_code_buffer[5] = ((uint16_t) __HAL_TIM_GET_COUNTER(&htim7));
 
                   __HAL_TIM_SET_COUNTER(&htim7, 0);
                   tim7_overflow = 0;
                   HAL_TIM_Base_Start_IT(&htim7);
+
+                  if (mode_switch_requested) {
+                      mode_switch_requested = 0;
+//                      ADC_SwitchSamplingMode(&hadc1, current_adc_mode);
+                  }
               }
           }
       }
@@ -231,11 +248,11 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
-  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV2;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_2) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
@@ -262,7 +279,7 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  hadc1.Init.Resolution = ADC_RESOLUTION_6B;
+  hadc1.Init.Resolution = ADC_RESOLUTION_10B;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
@@ -280,7 +297,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_6;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -288,6 +305,44 @@ static void MX_ADC1_Init(void)
   /* USER CODE BEGIN ADC1_Init 2 */
 
   /* USER CODE END ADC1_Init 2 */
+
+}
+
+/**
+  * @brief TIM6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM6_Init(void)
+{
+
+  /* USER CODE BEGIN TIM6_Init 0 */
+
+  /* USER CODE END TIM6_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM6_Init 1 */
+
+  /* USER CODE END TIM6_Init 1 */
+  htim6.Instance = TIM6;
+  htim6.Init.Prescaler = 1439;
+  htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim6.Init.Period = 62499;
+  htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim6, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM6_Init 2 */
+
+  /* USER CODE END TIM6_Init 2 */
 
 }
 
@@ -309,7 +364,7 @@ static void MX_TIM7_Init(void)
 
   /* USER CODE END TIM7_Init 1 */
   htim7.Instance = TIM7;
-  htim7.Init.Prescaler = 95;
+  htim7.Init.Prescaler = 89;
   htim7.Init.CounterMode = TIM_COUNTERMODE_UP;
   htim7.Init.Period = 62499;
   htim7.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -360,8 +415,8 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOF_CLK_ENABLE();
-  __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOJ_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(DEBUG_PIN_GPIO_Port, DEBUG_PIN_Pin, GPIO_PIN_RESET);
@@ -386,6 +441,12 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(ADC_STATUS_PIN_GPIO_Port, &GPIO_InitStruct);
 
+  /*Configure GPIO pin : MODE_SWITCH_Pin */
+  GPIO_InitStruct.Pin = MODE_SWITCH_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  HAL_GPIO_Init(MODE_SWITCH_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : EXT_RST_Pin */
   GPIO_InitStruct.Pin = EXT_RST_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -408,6 +469,9 @@ static void MX_GPIO_Init(void)
   /* EXTI interrupt init*/
   HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI3_IRQn);
 
 }
 

@@ -37,8 +37,9 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-extern uint8_t switch_pressed;
-extern uint8_t tim7_overflow;
+extern uint8_t current_adc_mode;
+extern uint8_t mode_switch_requested;
+extern uint16_t tim7_overflow;
 extern uint8_t pulse_fired;
 extern uint8_t adc_int;
 extern uint8_t usb_transfer_complete;
@@ -68,6 +69,9 @@ void Error_Handler(void);
 #define DEBUG_PIN_GPIO_Port GPIOC
 #define ADC_STATUS_PIN_Pin GPIO_PIN_6
 #define ADC_STATUS_PIN_GPIO_Port GPIOF
+#define MODE_SWITCH_Pin GPIO_PIN_3
+#define MODE_SWITCH_GPIO_Port GPIOJ
+#define MODE_SWITCH_EXTI_IRQn EXTI3_IRQn
 #define EXT_RST_Pin GPIO_PIN_7
 #define EXT_RST_GPIO_Port GPIOH
 #define ADC_SIGNAL_Pin GPIO_PIN_6

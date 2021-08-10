@@ -23,6 +23,7 @@
 #include "stm32f7xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <adc.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -59,6 +60,7 @@
 extern PCD_HandleTypeDef hpcd_USB_OTG_HS;
 extern DMA_HandleTypeDef hdma_adc1;
 extern ADC_HandleTypeDef hadc1;
+extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
 /* USER CODE BEGIN EV */
 
@@ -218,6 +220,22 @@ void EXTI0_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles EXTI line3 interrupt.
+  */
+void EXTI3_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI3_IRQn 0 */
+
+  /* USER CODE END EXTI3_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
+  /* USER CODE BEGIN EXTI3_IRQn 1 */
+  HAL_TIM_Base_Stop_IT(&htim6); // debouncing timer
+  HAL_TIM_Base_Start_IT(&htim6); // debouncing timer
+
+  /* USER CODE END EXTI3_IRQn 1 */
+}
+
+/**
   * @brief This function handles ADC1, ADC2 and ADC3 global interrupts.
   */
 void ADC_IRQHandler(void)
@@ -229,6 +247,29 @@ void ADC_IRQHandler(void)
   /* USER CODE BEGIN ADC_IRQn 1 */
 
   /* USER CODE END ADC_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM6 global interrupt, DAC1 and DAC2 underrun error interrupts.
+  */
+void TIM6_DAC_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM6_DAC_IRQn 0 */
+
+  /* USER CODE END TIM6_DAC_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim6);
+  /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
+  if (HAL_GPIO_ReadPin(MODE_SWITCH_GPIO_Port, MODE_SWITCH_Pin) == GPIO_PIN_RESET) {
+        if (current_adc_mode >= ADC_CUSTOM_SPEED_MAX_VALUE) {
+          current_adc_mode = 0;
+        } else {
+          current_adc_mode += 1;
+        }
+        mode_switch_requested = 1;
+  }
+  HAL_TIM_Base_Stop(&htim6);
+
+  /* USER CODE END TIM6_DAC_IRQn 1 */
 }
 
 /**

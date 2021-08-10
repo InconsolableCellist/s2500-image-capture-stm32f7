@@ -276,6 +276,15 @@
 		<Unit filename="/home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/Drivers/STM32F7xx_HAL_Driver/Inc/stm32f7xx_ll_usb.h">
 			<Option target="s2500-image-capture-f7.elf"/>
 		</Unit>
+		<Unit filename="/home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/Drivers/STM32F7xx_HAL_Driver/License.md">
+			<Option target="s2500-image-capture-f7.elf"/>
+		</Unit>
+		<Unit filename="/home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/Drivers/STM32F7xx_HAL_Driver/README.md">
+			<Option target="s2500-image-capture-f7.elf"/>
+		</Unit>
+		<Unit filename="/home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/Drivers/STM32F7xx_HAL_Driver/Release_Notes.html">
+			<Option target="s2500-image-capture-f7.elf"/>
+		</Unit>
 		<Unit filename="/home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_hal.c">
 			<Option target="s2500-image-capture-f7.elf"/>
 		</Unit>
@@ -337,6 +346,12 @@
 			<Option target="s2500-image-capture-f7.elf"/>
 		</Unit>
 		<Unit filename="/home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/Drivers/STM32F7xx_HAL_Driver/Src/stm32f7xx_ll_usb.c">
+			<Option target="s2500-image-capture-f7.elf"/>
+		</Unit>
+		<Unit filename="/home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/Drivers/STM32F7xx_HAL_Driver/_htmresc/mini-st.css">
+			<Option target="s2500-image-capture-f7.elf"/>
+		</Unit>
+		<Unit filename="/home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/Drivers/STM32F7xx_HAL_Driver/_htmresc/st_logo.png">
 			<Option target="s2500-image-capture-f7.elf"/>
 		</Unit>
 		<Unit filename="/home/offipso/Programs/arduino/stm32/s2500-image-capture-f7/Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc/usbd_cdc.h">
