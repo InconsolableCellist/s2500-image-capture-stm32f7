@@ -36,7 +36,7 @@
 // Flow control
 uint8_t mode_switch_requested = 0;
 uint8_t pulse_fired = 0;
-uint8_t adc_int = 0;
+uint8_t pulse_happening = 0;
 uint8_t usb_transfer_complete = 1;
 uint8_t current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS;
 
@@ -145,9 +145,10 @@ int main(void)
       if (pulse_fired == 1) {
           // Measures the duration of X and/or Y pulses and starts/stops data collection
           pulse_fired = 0;
-          if (htim7.Instance->CR1 & TIM_CR1_CEN) {
+          if (pulse_happening) {
               // Stop counting the last pulse, transmit some status bytes, start counting row time, and start saving data
               HAL_TIM_Base_Stop_IT(&htim7);
+              pulse_happening = 0;
 
               // how to calculate duration in seconds:
               // pulse_time = ((double)tim7_overflow / 16) + ((double)__HAL_TIM_GET_COUNTER(&htim7) / 1000000);
@@ -170,6 +171,7 @@ int main(void)
               HAL_ADC_Start_DMA(&hadc1, (uint32_t*)cur_buf, BUF_SIZE);
           } else {
               // X or Y pulse happening
+              pulse_happening = 1;
 
               // It's possible on startup/reset/external reset to think we're ready to measure a low pulse,
               // but the signal is high. Prevent that by always checking pin state
