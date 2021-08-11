@@ -35,57 +35,59 @@ void ADC_SwitchSamplingMode(ADC_HandleTypeDef* hadc, uint8_t adc_custom_speed) {
     }
 }
 
-// 1.326 Msps
+// 135 horizontal pixels
 static void modeRapid(ADC_HandleTypeDef* hadc) {
     ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+    hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
     hadc->Init.Resolution = ADC_RESOLUTION_6B;
     switchMode(hadc, &sConfig);
 }
 
-// 0.923 Msps
+// 1,308 horizontal pixels
 static void modeHalf(ADC_HandleTypeDef* hadc) {
     ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
-    hadc->Init.Resolution = ADC_RESOLUTION_10B;
-    switchMode(hadc, &sConfig);
-}
-
-// 0.446 Msps
-static void modeHalfSlower(ADC_HandleTypeDef* hadc) {
-    ADC_ChannelConfTypeDef sConfig = {0};
-    sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
-    hadc->Init.Resolution = ADC_RESOLUTION_10B;
-    switchMode(hadc, &sConfig);
-}
-
-// 0.319 Msps
-static void modeThreeQuarters(ADC_HandleTypeDef* hadc) {
-    ADC_ChannelConfTypeDef sConfig = {0};
-    sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
-    hadc->Init.Resolution = ADC_RESOLUTION_10B;
-    switchMode(hadc, &sConfig);
-}
-
-// 0.303 Msps
-static void modeThreeQuartersSlower(ADC_HandleTypeDef* hadc) {
-    ADC_ChannelConfTypeDef sConfig = {0};
-    sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
+    hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
     hadc->Init.Resolution = ADC_RESOLUTION_12B;
     switchMode(hadc, &sConfig);
 }
 
-// 0.025 Msps
+static void modeHalfSlower(ADC_HandleTypeDef* hadc) {
+    ADC_ChannelConfTypeDef sConfig = {0};
+    sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+    hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+    hadc->Init.Resolution = ADC_RESOLUTION_12B;
+    switchMode(hadc, &sConfig);
+}
+
+// 1,994 horizontal pixels
+static void modeThreeQuarters(ADC_HandleTypeDef* hadc) {
+    ADC_ChannelConfTypeDef sConfig = {0};
+    sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+    hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
+    hadc->Init.Resolution = ADC_RESOLUTION_12B;
+    switchMode(hadc, &sConfig);
+}
+
+static void modeThreeQuartersSlower(ADC_HandleTypeDef* hadc) {
+    ADC_ChannelConfTypeDef sConfig = {0};
+    sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+    hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+    hadc->Init.Resolution = ADC_RESOLUTION_12B;
+    switchMode(hadc, &sConfig);
+}
+
 static void modePhoto(ADC_HandleTypeDef* hadc) {
     ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
+    hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
     hadc->Init.Resolution = ADC_RESOLUTION_12B;
     switchMode(hadc, &sConfig);
 }
 
 static void switchMode(ADC_HandleTypeDef* hadc, ADC_ChannelConfTypeDef* sConfig) {
     hadc->Instance = ADC1;
-    hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
     hadc->Init.ScanConvMode = ADC_SCAN_DISABLE;
     hadc->Init.ContinuousConvMode = ENABLE;
     hadc->Init.DiscontinuousConvMode = DISABLE;
