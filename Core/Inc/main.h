@@ -43,6 +43,7 @@ extern uint16_t tim7_overflow;
 extern uint8_t pulse_fired;
 extern uint8_t adc_int;
 extern uint8_t usb_transfer_complete;
+volatile extern uint8_t rising_or_falling;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/

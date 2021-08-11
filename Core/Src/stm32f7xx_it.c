@@ -210,11 +210,19 @@ void SysTick_Handler(void)
 void EXTI0_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_IRQn 0 */
-  pulse_fired += 1;
+//  pulse_fired += 1;
 
   /* USER CODE END EXTI0_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
   /* USER CODE BEGIN EXTI0_IRQn 1 */
+  if (htim6.Instance->CR1 & TIM_CR1_CEN) return;
+  HAL_TIM_Base_Stop_IT(&htim6); // debouncing timer
+  if (HAL_GPIO_ReadPin(XY_PULSE_GPIO_Port, XY_PULSE_Pin) == GPIO_PIN_SET) {
+      rising_or_falling = 1;
+  } else {
+      rising_or_falling = 0;
+  }
+ HAL_TIM_Base_Start_IT(&htim6); // debouncing timer
 
   /* USER CODE END EXTI0_IRQn 1 */
 }
@@ -229,8 +237,8 @@ void EXTI3_IRQHandler(void)
   /* USER CODE END EXTI3_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
   /* USER CODE BEGIN EXTI3_IRQn 1 */
-  HAL_TIM_Base_Stop_IT(&htim6); // debouncing timer
-  HAL_TIM_Base_Start_IT(&htim6); // debouncing timer
+//  HAL_TIM_Base_Stop_IT(&htim6); // debouncing timer
+//  HAL_TIM_Base_Start_IT(&htim6); // debouncing timer
 
   /* USER CODE END EXTI3_IRQn 1 */
 }
@@ -259,6 +267,20 @@ void TIM6_DAC_IRQHandler(void)
   /* USER CODE END TIM6_DAC_IRQn 0 */
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
+  HAL_TIM_Base_Stop(&htim6);
+  if (rising_or_falling) {
+      if (HAL_GPIO_ReadPin(XY_PULSE_GPIO_Port, XY_PULSE_Pin) == GPIO_PIN_SET) {
+//          DEBUG_HIGH
+          pulse_fired = 1;
+      }
+  } else {
+      if (HAL_GPIO_ReadPin(XY_PULSE_GPIO_Port, XY_PULSE_Pin) == GPIO_PIN_RESET) {
+//          DEBUG_LOW
+          pulse_fired = 1;
+      }
+  }
+//  rising_or_falling = 0;
+  /*
   if (HAL_GPIO_ReadPin(MODE_SWITCH_GPIO_Port, MODE_SWITCH_Pin) == GPIO_PIN_RESET) {
         if (current_adc_mode >= ADC_CUSTOM_SPEED_MAX_VALUE) {
           current_adc_mode = 0;
@@ -267,7 +289,7 @@ void TIM6_DAC_IRQHandler(void)
         }
         mode_switch_requested = 1;
   }
-  HAL_TIM_Base_Stop(&htim6);
+   */
 
   /* USER CODE END TIM6_DAC_IRQn 1 */
 }

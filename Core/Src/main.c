@@ -39,6 +39,7 @@ uint8_t pulse_fired = 0;
 uint8_t pulse_happening = 0;
 uint8_t usb_transfer_complete = 1;
 uint8_t current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS;
+volatile uint8_t rising_or_falling = 0;
 
 // Data buffers
 uint16_t tim7_overflow = 0;
@@ -142,7 +143,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-      if (pulse_fired == 1) {
+     if (pulse_fired == 1) {
           // Measures the duration of X and/or Y pulses and starts/stops data collection
           pulse_fired = 0;
           if (pulse_happening) {
@@ -328,9 +329,9 @@ static void MX_TIM6_Init(void)
 
   /* USER CODE END TIM6_Init 1 */
   htim6.Instance = TIM6;
-  htim6.Init.Prescaler = 1439;
+  htim6.Init.Prescaler = 0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 62499;
+  htim6.Init.Period = 95;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
