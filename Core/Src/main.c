@@ -282,7 +282,7 @@ static void MX_ADC1_Init(void)
   */
   hadc1.Instance = ADC1;
   hadc1.Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
-  hadc1.Init.Resolution = ADC_RESOLUTION_10B;
+  hadc1.Init.Resolution = ADC_RESOLUTION_12B;
   hadc1.Init.ScanConvMode = ADC_SCAN_DISABLE;
   hadc1.Init.ContinuousConvMode = ENABLE;
   hadc1.Init.DiscontinuousConvMode = DISABLE;
@@ -300,7 +300,7 @@ static void MX_ADC1_Init(void)
   */
   sConfig.Channel = ADC_CHANNEL_6;
   sConfig.Rank = ADC_REGULAR_RANK_1;
-  sConfig.SamplingTime = ADC_SAMPLETIME_15CYCLES;
+  sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
   if (HAL_ADC_ConfigChannel(&hadc1, &sConfig) != HAL_OK)
   {
     Error_Handler();
@@ -548,8 +548,20 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
     // possible overrun
-    DEBUG_HIGH // signal error condition
-    DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    DEBUG_HIGH DEBUG_LOW
+    HAL_ADC_Stop_DMA(hadc);
+    HAL_ADC_Start_DMA(hadc, (uint32_t*)cur_buf, BUF_SIZE);
 }
 
 
