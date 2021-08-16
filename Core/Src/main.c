@@ -169,7 +169,7 @@ int main(void)
               tim7_overflow = 0;
               HAL_TIM_Base_Start_IT(&htim7);
 
-              HAL_ADC_Start_DMA(&hadc1, (uint32_t*)cur_buf, BUF_SIZE);
+//              HAL_ADC_Start_DMA(&hadc1, (uint32_t*)cur_buf, BUF_SIZE);
           } else {
               // X or Y pulse happening
               pulse_happening = 1;
@@ -178,7 +178,7 @@ int main(void)
               // but the signal is high. Prevent that by always checking pin state
               if (HAL_GPIO_ReadPin(XY_PULSE_GPIO_Port, XY_PULSE_Pin) == GPIO_PIN_RESET) {
                   // Stop data collection, stop the timer and record the last row time, and begin measuring a low pulse
-                  HAL_ADC_Stop_DMA(&hadc1);
+//                  HAL_ADC_Stop_DMA(&hadc1);
                   HAL_TIM_Base_Stop_IT(&htim7);
                   status_code_buffer[4] = tim7_overflow;
                   status_code_buffer[5] = ((uint16_t) __HAL_TIM_GET_COUNTER(&htim7));
@@ -290,7 +290,7 @@ static void MX_ADC1_Init(void)
   hadc1.Init.ExternalTrigConv = ADC_SOFTWARE_START;
   hadc1.Init.DataAlign = ADC_DATAALIGN_RIGHT;
   hadc1.Init.NbrOfConversion = 1;
-  hadc1.Init.DMAContinuousRequests = DISABLE;
+  hadc1.Init.DMAContinuousRequests = ENABLE;
   hadc1.Init.EOCSelection = ADC_EOC_SEQ_CONV;
   if (HAL_ADC_Init(&hadc1) != HAL_OK)
   {
@@ -528,7 +528,7 @@ void SystemClock_SwitchToPLL() {
 }
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
-    HAL_ADC_Stop_DMA(&hadc1);
+//    HAL_ADC_Stop_DMA(&hadc1);
     if (!usb_transfer_complete || buf_ready) {
         // buf still being ready means it wasn't transmitted
         DEBUG_HIGH // signal failure to transfer
@@ -543,7 +543,7 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
     }
     buf_ready = 1;
 
-    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)cur_buf, BUF_SIZE);
+//    HAL_ADC_Start_DMA(&hadc1, (uint32_t*)cur_buf, BUF_SIZE);
 }
 
 void HAL_ADC_ErrorCallback(ADC_HandleTypeDef *hadc) {
