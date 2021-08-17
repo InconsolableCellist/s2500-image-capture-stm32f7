@@ -95,7 +95,7 @@ static void switchMode(ADC_HandleTypeDef* hadc, ADC_ChannelConfTypeDef* sConfig)
     hadc->Init.ExternalTrigConv = ADC_SOFTWARE_START;
     hadc->Init.DataAlign = ADC_DATAALIGN_RIGHT;
     hadc->Init.NbrOfConversion = 1;
-    hadc->Init.DMAContinuousRequests = DISABLE;
+    hadc->Init.DMAContinuousRequests = ENABLE;
     hadc->Init.EOCSelection = ADC_EOC_SEQ_CONV;
     if (HAL_ADC_Init(hadc) != HAL_OK) {
         DEBUG_HIGH DEBUG_LOW

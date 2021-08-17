@@ -40,6 +40,7 @@ uint8_t pulse_happening = 0;
 uint8_t usb_transfer_complete = 1;
 uint8_t current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS;
 volatile uint8_t rising_or_falling = 0;
+uint8_t status_buffer_ready = 0;
 
 // Data buffers
 uint16_t tim7_overflow = 0;
@@ -160,9 +161,12 @@ int main(void)
               status_code_buffer[3] = (uint16_t)current_adc_mode;
               // [4] and [5] set in the pulse code, tim7_overflow and the __HAL_TIM_GET_COUNTER, respectively
 
-              if (CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2) != USBD_OK) {
-                DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
-              }
+              status_buffer_ready = 1; // sent below
+//              if (CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2) != USBD_OK) {
+//                  DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
+//              } else {
+//                  break;
+//              }
 
               // Start timing the row
               __HAL_TIM_SET_COUNTER(&htim7, 0);
@@ -200,13 +204,28 @@ int main(void)
           usb_transfer_complete = 0;
 
           USB_STATUS_HIGH // set low by transfer complete callback
-          if (cur_buf == buffer0) {
-              status = CDC_Transmit_HS((uint8_t*)buffer1, BUF_SIZE*2);
-          } else {
-              status = CDC_Transmit_HS((uint8_t*)buffer0, BUF_SIZE*2);
+          while (status_buffer_ready) {
+              if (CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2) != USBD_OK) {
+                  DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
+              } else {
+                  status_buffer_ready = 0;
+                  break;
+              }
+          }
+          while (1) {
+              if (cur_buf == buffer0) {
+                  status = CDC_Transmit_HS((uint8_t*)buffer1, BUF_SIZE*2);
+              } else {
+                  status = CDC_Transmit_HS((uint8_t*)buffer0, BUF_SIZE*2);
+              }
+              if (status == USBD_OK) {
+                  break;
+              }
           }
           if (status != USBD_OK) {
               usb_transfer_complete = 1;
+              DEBUG_HIGH  // signal we lost a buffer
+              DEBUG_LOW
               DEBUG_HIGH  // signal we lost a buffer
               DEBUG_LOW
           }
@@ -532,6 +551,10 @@ void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
     if (!usb_transfer_complete || buf_ready) {
         // buf still being ready means it wasn't transmitted
         DEBUG_HIGH // signal failure to transfer
+        DEBUG_LOW
+        DEBUG_HIGH
+        DEBUG_LOW
+        DEBUG_HIGH
         DEBUG_LOW
     }
     if (cur_buf == buffer0) {
