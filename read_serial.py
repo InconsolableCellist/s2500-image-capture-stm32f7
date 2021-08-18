@@ -19,12 +19,12 @@ while 1:
     i = 0
     for val in vals:
         if vals[i] == 0xFE and vals[i+1] == 0xFE:
-            print("sync\n\ttimer overflows: {}, microseconds: {}\n\tscanmode: {}\n\tframe overflows: {}, microseconds: {}\n\tMB: {}".format(
-                  int.from_bytes(vals[i+2:i+3], "little"), 
-                  int.from_bytes(vals[i+4:i+5], "little"), 
-                  int.from_bytes(vals[i+6:i+7], "little"), 
-                  int.from_bytes(vals[i+8:i+9], "little"),
-                  int.from_bytes(vals[i+10:i+11], "little"), 
+            print("sync\n\tpulse: {} + {} (s)\n\tscanmode: {}\n\trow: {} + {} (s)\n\tMB: {}".format(
+                  (int.from_bytes(vals[i+2:i+4], "little"))/16, 
+                  (int.from_bytes(vals[i+4:i+6], "little"))/1000000, 
+                  int.from_bytes(vals[i+6:i+8], "little"), 
+                  (int.from_bytes(vals[i+8:i+10], "little"))/16,
+                  (int.from_bytes(vals[i+10:i+12], "little"))/1000000,
                   bytecount/1000/1000))
         i += 1
         bytecount += 1

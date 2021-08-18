@@ -47,7 +47,7 @@ static void modeRapid(ADC_HandleTypeDef* hadc) {
 // 1,308 horizontal pixels
 static void modeHalf(ADC_HandleTypeDef* hadc) {
     ADC_ChannelConfTypeDef sConfig = {0};
-    sConfig.SamplingTime = ADC_SAMPLETIME_3CYCLES;
+    sConfig.SamplingTime = ADC_SAMPLETIME_28CYCLES;
     hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV4;
     hadc->Init.Resolution = ADC_RESOLUTION_12B;
     switchMode(hadc, &sConfig);
@@ -95,7 +95,7 @@ static void switchMode(ADC_HandleTypeDef* hadc, ADC_ChannelConfTypeDef* sConfig)
     hadc->Init.ExternalTrigConv = ADC_SOFTWARE_START;
     hadc->Init.DataAlign = ADC_DATAALIGN_RIGHT;
     hadc->Init.NbrOfConversion = 1;
-    hadc->Init.DMAContinuousRequests = ENABLE;
+    hadc->Init.DMAContinuousRequests = DISABLE;
     hadc->Init.EOCSelection = ADC_EOC_SEQ_CONV;
     if (HAL_ADC_Init(hadc) != HAL_OK) {
         DEBUG_HIGH DEBUG_LOW
