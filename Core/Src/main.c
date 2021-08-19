@@ -35,11 +35,13 @@
 
 // Flow control
 uint8_t mode_switch_requested = 0;
-uint8_t pulse_fired = 0;
+uint8_t xy_pulse_fired = 0;
+uint8_t y_pulse_fired = 0;
 uint8_t pulse_was_happening = 0;
 uint8_t usb_transfer_complete = 1;
 uint8_t current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS;
-volatile uint8_t rising_or_falling = 0;
+volatile uint8_t xy_rising_or_falling = 0;
+volatile uint8_t y_rising_or_falling = 0;
 uint8_t status_buffer_ready = 0;
 uint16_t items_remaining = 0;
 
@@ -50,6 +52,26 @@ uint16_t* buffer1;
 volatile uint16_t* buf_to_fill = NULL;
 volatile uint8_t buf_ready = 0;
 uint16_t* status_code_buffer;
+
+/**
+ * status_code_buffer
+ *  0xFEFA - start of X pulse data
+ *  0xXXXX - pulse tim7 overflows (16/sec)
+ *  0xXXXX - pulse microseconds (1e6/sec)
+ *  0xXXXX - scan mode (ADC_CUSTOM_SPEED_*)
+ *  0xXXXX - row (image data) tim7 oveflows (16/sec)
+ *  0xXXXX - row (image data) microseconds (16/sec)
+ */
+
+/**
+ * status_code_buffer
+ *  0xFEFB - start of Y pulse data
+ *  0xXXXX - pulse tim7 overflows (16/sec)
+ *  0xXXXX - pulse microseconds (1e6/sec)
+ *  0xXXXX - scan mode (ADC_CUSTOM_SPEED_*)
+ *  0xXXXX - don't care
+ *  0xXXXX - don't care
+ */
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -67,8 +89,15 @@ DMA_HandleTypeDef hdma_adc1;
 
 TIM_HandleTypeDef htim6;
 TIM_HandleTypeDef htim7;
+TIM_HandleTypeDef htim13;
 
 /* USER CODE BEGIN PV */
+/*
+ *  htim6 = XY_Pulse bounce timer
+ *  htim7 = pulse/row timer
+ *  htim13 = Y_pulse bounce timer
+ */
+
 
 /* USER CODE END PV */
 
@@ -79,6 +108,7 @@ static void MX_DMA_Init(void);
 static void MX_ADC1_Init(void);
 static void MX_TIM7_Init(void);
 static void MX_TIM6_Init(void);
+static void MX_TIM13_Init(void);
 /* USER CODE BEGIN PFP */
 void SystemClock_SwitchToPLL(void);
 
@@ -132,6 +162,7 @@ int main(void)
   MX_TIM7_Init();
   MX_USB_DEVICE_Init();
   MX_TIM6_Init();
+  MX_TIM13_Init();
   /* USER CODE BEGIN 2 */
   HAL_ADC_Stop_DMA(&hadc1);
   ADC_SwitchSamplingMode(&hadc1, current_adc_mode);
@@ -147,8 +178,10 @@ int main(void)
     /* USER CODE BEGIN 3 */
       // X or Y pulse, rising or falling
       // Measures the duration of X and/or Y pulses and starts/stops data collection
-      if (pulse_fired) {
-          pulse_fired = 0;
+      // The xy_pulse line is supposed to contain both X and Y pulses, but in 3/4 scan speed the pulse time is the same
+      // We'll use the dedicated Y pulse line to detect Y pulses for sure
+      if (xy_pulse_fired) {
+          xy_pulse_fired = 0;
           if (HAL_GPIO_ReadPin(XY_PULSE_GPIO_Port, XY_PULSE_Pin) == GPIO_PIN_SET) {
               DEBUG_HIGH
 
@@ -170,7 +203,14 @@ int main(void)
               // how to calculate duration in seconds:
               // pulse_time = ((double)tim7_overflow / 16) + ((double)__HAL_TIM_GET_COUNTER(&htim7) / 1000000);
               // row_time   = ((double)tim7_overflow / 16) + ((double)__HAL_TIM_GET_COUNTER(&htim7) / 1000000);
-              status_code_buffer[0] = 0xFEFA;
+              if (y_pulse_fired) {
+                  y_pulse_fired = 0;
+                  // this is a Y pulse
+                  status_code_buffer[0] = 0xFEFB;
+              } else {
+                  // just an X pulse
+                  status_code_buffer[0] = 0xFEFA;
+              }
               // [1] and [2] set above (XY pulse time)
               status_code_buffer[3] = (uint16_t)current_adc_mode;
               status_code_buffer[4] = tim7_overflow; // row time
@@ -405,6 +445,37 @@ static void MX_TIM7_Init(void)
 }
 
 /**
+  * @brief TIM13 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM13_Init(void)
+{
+
+  /* USER CODE BEGIN TIM13_Init 0 */
+
+  /* USER CODE END TIM13_Init 0 */
+
+  /* USER CODE BEGIN TIM13_Init 1 */
+
+  /* USER CODE END TIM13_Init 1 */
+  htim13.Instance = TIM13;
+  htim13.Init.Prescaler = 0;
+  htim13.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim13.Init.Period = 95;
+  htim13.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim13.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim13) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM13_Init 2 */
+
+  /* USER CODE END TIM13_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -447,6 +518,12 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(USB_STATUS_PIN_GPIO_Port, USB_STATUS_PIN_Pin, GPIO_PIN_RESET);
 
+  /*Configure GPIO pin : Y_PULSE_Pin */
+  GPIO_InitStruct.Pin = Y_PULSE_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(Y_PULSE_GPIO_Port, &GPIO_InitStruct);
+
   /*Configure GPIO pin : DEBUG_PIN_Pin */
   GPIO_InitStruct.Pin = DEBUG_PIN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -487,11 +564,14 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_Init(USB_STATUS_PIN_GPIO_Port, &GPIO_InitStruct);
 
   /* EXTI interrupt init*/
-  HAL_NVIC_SetPriority(EXTI0_IRQn, 1, 0);
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
   HAL_NVIC_SetPriority(EXTI3_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 

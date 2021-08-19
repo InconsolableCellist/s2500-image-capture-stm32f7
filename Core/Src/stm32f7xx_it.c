@@ -62,6 +62,7 @@ extern DMA_HandleTypeDef hdma_adc1;
 extern ADC_HandleTypeDef hadc1;
 extern TIM_HandleTypeDef htim6;
 extern TIM_HandleTypeDef htim7;
+extern TIM_HandleTypeDef htim13;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -210,19 +211,19 @@ void SysTick_Handler(void)
 void EXTI0_IRQHandler(void)
 {
   /* USER CODE BEGIN EXTI0_IRQn 0 */
-//  pulse_fired += 1;
+//  xy_pulse_fired += 1;
 
   /* USER CODE END EXTI0_IRQn 0 */
   HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
   /* USER CODE BEGIN EXTI0_IRQn 1 */
   if (htim6.Instance->CR1 & TIM_CR1_CEN) return;
-  HAL_TIM_Base_Stop_IT(&htim6); // debouncing timer
+  HAL_TIM_Base_Stop_IT(&htim6); // xy_pulse debouncing timer
   if (HAL_GPIO_ReadPin(XY_PULSE_GPIO_Port, XY_PULSE_Pin) == GPIO_PIN_SET) {
-      rising_or_falling = 1;
+      xy_rising_or_falling = 1;
   } else {
-      rising_or_falling = 0;
+      xy_rising_or_falling = 0;
   }
- HAL_TIM_Base_Start_IT(&htim6); // debouncing timer
+ HAL_TIM_Base_Start_IT(&htim6); // xy_pulse debouncing timer
 
   /* USER CODE END EXTI0_IRQn 1 */
 }
@@ -258,6 +259,45 @@ void ADC_IRQHandler(void)
 }
 
 /**
+  * @brief This function handles EXTI line[9:5] interrupts.
+  */
+void EXTI9_5_IRQHandler(void)
+{
+  /* USER CODE BEGIN EXTI9_5_IRQn 0 */
+
+  /* USER CODE END EXTI9_5_IRQn 0 */
+  HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_8);
+  /* USER CODE BEGIN EXTI9_5_IRQn 1 */
+
+  /* USER CODE END EXTI9_5_IRQn 1 */
+}
+
+/**
+  * @brief This function handles TIM8 update interrupt and TIM13 global interrupt.
+  */
+void TIM8_UP_TIM13_IRQHandler(void)
+{
+  /* USER CODE BEGIN TIM8_UP_TIM13_IRQn 0 */
+    HAL_TIM_Base_Stop(&htim13);
+    if (y_rising_or_falling) {
+        if (HAL_GPIO_ReadPin(Y_PULSE_GPIO_Port, Y_PULSE_Pin) == GPIO_PIN_SET) {
+            DEBUG_HIGH
+            y_pulse_fired = 1;
+        }
+    } else {
+        if (HAL_GPIO_ReadPin(Y_PULSE_GPIO_Port, Y_PULSE_Pin) == GPIO_PIN_RESET) {
+            DEBUG_LOW
+            y_pulse_fired = 1;
+        }
+    }
+  /* USER CODE END TIM8_UP_TIM13_IRQn 0 */
+  HAL_TIM_IRQHandler(&htim13);
+  /* USER CODE BEGIN TIM8_UP_TIM13_IRQn 1 */
+
+  /* USER CODE END TIM8_UP_TIM13_IRQn 1 */
+}
+
+/**
   * @brief This function handles TIM6 global interrupt, DAC1 and DAC2 underrun error interrupts.
   */
 void TIM6_DAC_IRQHandler(void)
@@ -268,28 +308,17 @@ void TIM6_DAC_IRQHandler(void)
   HAL_TIM_IRQHandler(&htim6);
   /* USER CODE BEGIN TIM6_DAC_IRQn 1 */
   HAL_TIM_Base_Stop(&htim6);
-  if (rising_or_falling) {
+  if (xy_rising_or_falling) {
       if (HAL_GPIO_ReadPin(XY_PULSE_GPIO_Port, XY_PULSE_Pin) == GPIO_PIN_SET) {
 //          DEBUG_HIGH
-          pulse_fired = 1;
+          xy_pulse_fired = 1;
       }
   } else {
       if (HAL_GPIO_ReadPin(XY_PULSE_GPIO_Port, XY_PULSE_Pin) == GPIO_PIN_RESET) {
 //          DEBUG_LOW
-          pulse_fired = 1;
+          xy_pulse_fired = 1;
       }
   }
-//  rising_or_falling = 0;
-  /*
-  if (HAL_GPIO_ReadPin(MODE_SWITCH_GPIO_Port, MODE_SWITCH_Pin) == GPIO_PIN_RESET) {
-        if (current_adc_mode >= ADC_CUSTOM_SPEED_MAX_VALUE) {
-          current_adc_mode = 0;
-        } else {
-          current_adc_mode += 1;
-        }
-        mode_switch_requested = 1;
-  }
-   */
 
   /* USER CODE END TIM6_DAC_IRQn 1 */
 }
@@ -338,6 +367,20 @@ void OTG_HS_IRQHandler(void)
 }
 
 /* USER CODE BEGIN 1 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+    if (GPIO_Pin == GPIO_PIN_8) {
+        // Y pulse interrupt
+        if (htim13.Instance->CR1 & TIM_CR1_CEN) return;
+        HAL_TIM_Base_Stop_IT(&htim13); // Y_pulse debouncing timer
+        if (HAL_GPIO_ReadPin(Y_PULSE_GPIO_Port, Y_PULSE_Pin) == GPIO_PIN_SET) {
+            y_rising_or_falling = 1;
+        } else {
+            y_rising_or_falling = 0;
+        }
+        HAL_TIM_Base_Start_IT(&htim13); // debouncing timer
+
+    }
+}
 
 /* USER CODE END 1 */
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

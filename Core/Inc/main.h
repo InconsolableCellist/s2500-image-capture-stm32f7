@@ -40,10 +40,12 @@ extern "C" {
 extern uint8_t current_adc_mode;
 extern uint8_t mode_switch_requested;
 extern uint16_t tim7_overflow;
-extern uint8_t pulse_fired;
+extern uint8_t xy_pulse_fired;
+extern uint8_t y_pulse_fired;
 extern uint8_t adc_int;
 extern uint8_t usb_transfer_complete;
-volatile extern uint8_t rising_or_falling;
+volatile extern uint8_t xy_rising_or_falling;
+volatile extern uint8_t y_rising_or_falling;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -66,6 +68,9 @@ void Error_Handler(void);
 /* Private defines -----------------------------------------------------------*/
 #define OSC_25M_Pin GPIO_PIN_0
 #define OSC_25M_GPIO_Port GPIOH
+#define Y_PULSE_Pin GPIO_PIN_8
+#define Y_PULSE_GPIO_Port GPIOC
+#define Y_PULSE_EXTI_IRQn EXTI9_5_IRQn
 #define DEBUG_PIN_Pin GPIO_PIN_6
 #define DEBUG_PIN_GPIO_Port GPIOC
 #define ADC_STATUS_PIN_Pin GPIO_PIN_6
