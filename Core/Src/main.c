@@ -170,7 +170,7 @@ int main(void)
               // how to calculate duration in seconds:
               // pulse_time = ((double)tim7_overflow / 16) + ((double)__HAL_TIM_GET_COUNTER(&htim7) / 1000000);
               // row_time   = ((double)tim7_overflow / 16) + ((double)__HAL_TIM_GET_COUNTER(&htim7) / 1000000);
-              status_code_buffer[0] = 0xFEFE;
+              status_code_buffer[0] = 0xFEFA;
               // [1] and [2] set above (XY pulse time)
               status_code_buffer[3] = (uint16_t)current_adc_mode;
               status_code_buffer[4] = tim7_overflow; // row time
@@ -189,15 +189,6 @@ int main(void)
               __HAL_TIM_SET_COUNTER(&htim7, 0);
               tim7_overflow = 0;
               HAL_TIM_Base_Start_IT(&htim7);
-          }
-      }
-
-      while (status_buffer_ready) {
-          USB_STATUS_HIGH // set low by transfer complete callback
-          if (CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2) != USBD_OK) {
-              DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
-          } else {
-              status_buffer_ready = 0;
           }
       }
 
@@ -227,6 +218,15 @@ int main(void)
               usb_transfer_complete = 1;
               buf_ready = 0;
               items_remaining = 0;
+          }
+      }
+
+      while (status_buffer_ready) {
+          USB_STATUS_HIGH // set low by transfer complete callback
+          if (CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2) != USBD_OK) {
+              DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
+          } else {
+              status_buffer_ready = 0;
           }
       }
 
