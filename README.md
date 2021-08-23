@@ -16,4 +16,6 @@ This is firmware for the STM32F769NI to act as a digital image acquisition devic
 
 * It's controlled and its data is displayed with my [S-2500 Image Control Program](https://github.com/InconsolableCellist/s2500-image-viewer) program
 
+* Debugging information is exposed by three pins on the STM32, useful for a logic analyzer to monitor program flow control or error states
+
 * This is likely useful to absolutely no one else
