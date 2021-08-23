@@ -1,6 +1,6 @@
 # S-2500 Image Capture
 
-This is firmware for the STM32F769NI to act as a digital image acquisition device for a Hitachi S-2500 scanning electron microscope.
+This is firmware for the STM32F769NI to act as a digital image acquisition device for a Hitachi S-2500 scanning electron microscope from 1987.
 
 * It was developed and tested on a 32F769IDISCO Discovery board by ST and connected to the S-2500 via specific points on the video amplifier board, which will be detailed in a schematic.
 
