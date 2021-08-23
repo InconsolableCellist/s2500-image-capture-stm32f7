@@ -267,6 +267,14 @@ static int8_t CDC_Receive_HS(uint8_t* Buf, uint32_t *Len)
   /* USER CODE BEGIN 11 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceHS, &Buf[0]);
   USBD_CDC_ReceivePacket(&hUsbDeviceHS);
+  if (!usb_received_data_buf_ready) {
+    usb_received_data_buf_ready = 0;
+    for (uint32_t i=0; i<*Len && i<64; ++i) {
+        usb_received_data_buf[i] = Buf[i];
+    }
+    usb_received_data_len = *Len;
+    usb_received_data_buf_ready = 1;
+  }
   return (USBD_OK);
   /* USER CODE END 11 */
 }

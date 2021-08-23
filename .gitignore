@@ -5,3 +5,5 @@ data.dat
 cmake-build-release
 data
 .~lock.pixel_calc.ods#
+data_old
+fix_email.sh

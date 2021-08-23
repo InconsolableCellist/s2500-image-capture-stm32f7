@@ -46,6 +46,9 @@ extern uint8_t adc_int;
 extern uint8_t usb_transfer_complete;
 volatile extern uint8_t xy_rising_or_falling;
 volatile extern uint8_t y_rising_or_falling;
+volatile extern uint8_t* usb_received_data_buf;
+volatile extern uint8_t usb_received_data_buf_ready;
+volatile extern uint8_t usb_received_data_len;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
