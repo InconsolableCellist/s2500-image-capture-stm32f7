@@ -18,7 +18,8 @@ while 1:
     vals = ser.read(ser.inWaiting())
     i = 0
     for val in vals:
-        if vals[i] == 0xFA and vals[i+1] == 0xFE:
+        if (vals[i] == 0xFA and vals[i+1] == 0xFE) or (vals[i] == 0xFB and vals[i+1] == 0xFE):
+
             print("sync\n\tpulse: {} + {} (s)\n\tscanmode: {}\n\trow: {} + {} (s)\n\tMB: {}".format(
                   (int.from_bytes(vals[i+2:i+4], "little"))/16, 
                   (int.from_bytes(vals[i+4:i+6], "little"))/1000000, 
