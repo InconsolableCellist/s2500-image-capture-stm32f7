@@ -359,6 +359,10 @@ void HandleIncomingCommand() {
                 status_code_buffer[0] = 0xFEFC;
                 status_buffer_ready = 1;
                 break;
+            case 0xA8:
+                current_adc_mode = ADC_CUSTOM_SPEED_PHOTO_SLOWEST;
+                mode_switch_requested = 1;
+                break;
             default:
                break;
         }

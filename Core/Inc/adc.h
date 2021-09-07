@@ -9,7 +9,8 @@
 #define ADC_CUSTOM_SPEED_THREEQUARTERS         3U
 #define ADC_CUSTOM_SPEED_THREEQUARTERS_SLOWER  4U
 #define ADC_CUSTOM_SPEED_PHOTO                 5U
-#define ADC_CUSTOM_SPEED_MAX_VALUE             5U
+#define ADC_CUSTOM_SPEED_PHOTO_SLOWEST         6U
+#define ADC_CUSTOM_SPEED_MAX_VALUE             6U
                                                     // slowest, least error, most bits of resolution
 
 void ADC_SwitchSamplingMode(ADC_HandleTypeDef* hadc, uint8_t adc_custom_speed);
