@@ -7,6 +7,7 @@ static void modeHalfSlower(ADC_HandleTypeDef* hadc);
 static void modeThreeQuarters(ADC_HandleTypeDef* hadc);
 static void modeThreeQuartersSlower(ADC_HandleTypeDef* hadc);
 static void modePhoto(ADC_HandleTypeDef* hadc);
+static void modePhotoSlowest(ADC_HandleTypeDef* hadc);
 static void switchMode(ADC_HandleTypeDef* hadc, ADC_ChannelConfTypeDef* sConfig);
 
 //  6 bits   9 cycles
@@ -30,6 +31,8 @@ void ADC_SwitchSamplingMode(ADC_HandleTypeDef* hadc, uint8_t adc_custom_speed) {
             modeThreeQuartersSlower(hadc); break;
         case ADC_CUSTOM_SPEED_PHOTO:
             modePhoto(hadc); break;
+        case ADC_CUSTOM_SPEED_PHOTO_SLOWEST:
+            modePhotoSlowest(hadc); break;
         default:
             break;
     }
@@ -79,6 +82,14 @@ static void modeThreeQuartersSlower(ADC_HandleTypeDef* hadc) {
 }
 
 static void modePhoto(ADC_HandleTypeDef* hadc) {
+    ADC_ChannelConfTypeDef sConfig = {0};
+    sConfig.SamplingTime = ADC_SAMPLETIME_144CYCLES;
+    hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;
+    hadc->Init.Resolution = ADC_RESOLUTION_12B;
+    switchMode(hadc, &sConfig);
+}
+
+static void modePhotoSlowest(ADC_HandleTypeDef* hadc) {
     ADC_ChannelConfTypeDef sConfig = {0};
     sConfig.SamplingTime = ADC_SAMPLETIME_480CYCLES;
     hadc->Init.ClockPrescaler = ADC_CLOCK_SYNC_PCLK_DIV8;

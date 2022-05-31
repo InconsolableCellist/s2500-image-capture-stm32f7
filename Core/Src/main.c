@@ -30,8 +30,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define BUF_SIZE 128        // number of elements, not bytes
-#define STATUS_BUF_SIZE 6   // number of elements, not bytes
+#define BUF_SIZE 128
+#define STATUS_BUF_SIZE 6
 
 // Flow control
 uint8_t mode_switch_requested = 0;
@@ -41,7 +41,7 @@ uint8_t usb_transfer_complete = 1;
 uint8_t current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS;
 volatile uint8_t xy_rising_or_falling = 0;
 volatile uint8_t y_rising_or_falling = 0;
-uint8_t status_buffer_ready = 1;
+uint8_t status_buffer_ready = 0;
 uint16_t items_remaining = 0;
 
 // Data buffers
@@ -53,7 +53,7 @@ volatile uint8_t buf_ready = 0;
 uint16_t* status_code_buffer;
 
 volatile uint8_t* usb_received_data_buf;
-volatile uint8_t usb_received_data_buf_ready = 0;
+volatile uint8_t usb_received_data_buf_ready = 1;
 volatile uint8_t usb_received_data_len = 64;
 
 /**
@@ -76,12 +76,12 @@ volatile uint8_t usb_received_data_len = 64;
  *  0xXXXX - don't care
  *
  * status_code_buffer
- *  0xFEFC - responding to heartbeat request command
- *  0xXXXX - don't care
- *  0xXXXX - don't care
- *  0xXXXX - don't care
- *  0xXXXX - don't care
- *  0xXXXX - don't care
+ * 0xFEFC - responding to heartbeat request command
+ * 0xXXXX - don't care
+ * 0xXXXX - don't care
+ * 0xXXXX - don't care
+ * 0xXXXX - don't care
+ * 0xXXXX - don't care
  *
  * Everything else sent over USB are ADC sampled values
  */
@@ -287,6 +287,7 @@ int main(void)
         mode_switch_requested = 0;
         // ADC restarted during XY pulse
     }
+
   }
   /* USER CODE END 3 */
 }
@@ -405,7 +406,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 18;
+  htim6.Init.Period = 95;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
