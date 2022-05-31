@@ -30,8 +30,8 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
-#define BUF_SIZE 128
-#define STATUS_BUF_SIZE 6
+#define BUF_SIZE 128        // number of elements, not bytes
+#define STATUS_BUF_SIZE 6   // number of elements, not bytes
 
 // Flow control
 uint8_t mode_switch_requested = 0;
@@ -41,7 +41,7 @@ uint8_t usb_transfer_complete = 1;
 uint8_t current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS;
 volatile uint8_t xy_rising_or_falling = 0;
 volatile uint8_t y_rising_or_falling = 0;
-uint8_t status_buffer_ready = 0;
+uint8_t status_buffer_ready = 1;
 uint16_t items_remaining = 0;
 
 // Data buffers
@@ -53,7 +53,7 @@ volatile uint8_t buf_ready = 0;
 uint16_t* status_code_buffer;
 
 volatile uint8_t* usb_received_data_buf;
-volatile uint8_t usb_received_data_buf_ready = 1;
+volatile uint8_t usb_received_data_buf_ready = 0;
 volatile uint8_t usb_received_data_len = 64;
 
 /**
@@ -76,12 +76,12 @@ volatile uint8_t usb_received_data_len = 64;
  *  0xXXXX - don't care
  *
  * status_code_buffer
- * 0xFEFC - responding to heartbeat request command
- * 0xXXXX - don't care
- * 0xXXXX - don't care
- * 0xXXXX - don't care
- * 0xXXXX - don't care
- * 0xXXXX - don't care
+ *  0xFEFC - responding to heartbeat request command
+ *  0xXXXX - don't care
+ *  0xXXXX - don't care
+ *  0xXXXX - don't care
+ *  0xXXXX - don't care
+ *  0xXXXX - don't care
  *
  * Everything else sent over USB are ADC sampled values
  */
@@ -145,14 +145,12 @@ static void MX_TIM13_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
-
 void HandleIncomingCommand();
 
 void SendBuffer(uint8_t status, uint16_t len);
 
 void SendStatusBuffer();
+/* USER CODE END 0 */
 
 /**
   * @brief  The application entry point.
@@ -176,10 +174,11 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-    for (uint16_t i=0; i<BUF_SIZE; ++i) {
-        buffer0[i] = 0x55FF;
-        buffer1[i] = 0x22FF;
-  }
+    memset(buffer0, 0x55, BUF_SIZE * sizeof(uint16_t));
+    memset(buffer1, 0x54, BUF_SIZE * sizeof(uint16_t));
+    memset(status_code_buffer, 0x00, STATUS_BUF_SIZE * sizeof(uint16_t));
+    status_code_buffer[0] = 0xFEFA;
+    memset(usb_received_data_buf, 0x52, 64);
 
   /* USER CODE END Init */
 
@@ -288,79 +287,8 @@ int main(void)
         mode_switch_requested = 0;
         // ADC restarted during XY pulse
     }
-
   }
   /* USER CODE END 3 */
-}
-
-void SendStatusBuffer() {
-    USB_STATUS_HIGH // set low by transfer complete callback
-    if (CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2) != USBD_OK) {
-        DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
-    } else {
-        status_buffer_ready = 0;
-    }
-}
-
-void SendBuffer(uint8_t status, uint16_t len) {// The buffer just swapped and the old one is ready to send
-    usb_transfer_complete = 0;
-
-    USB_STATUS_LOW
-    USB_STATUS_HIGH // set low by transfer complete callback
-    // Transfer up to BUF_SIZE samples, less the number, in bytes (2 bytes per sample)
-    if (buf_to_fill == buffer0) {
-        status = CDC_Transmit_HS((uint8_t*)buffer1, len);
-    } else {
-        status = CDC_Transmit_HS((uint8_t*)buffer0, len);
-    }
-    if (status != USBD_OK) {
-        // signal we lost a buffer
-        DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
-    } else {
-        usb_transfer_complete = 1;
-        buf_ready = 0;
-        items_remaining = 0;
-    }
-}
-
-void HandleIncomingCommand() {
-    for (uint8_t i; i < usb_received_data_len; ++i) {
-        switch (usb_received_data_buf[i]) {
-            case 0xA0: // restart with current ADC mode
-                mode_switch_requested = 1;
-                break;
-            case 0xA1:
-                current_adc_mode = ADC_CUSTOM_SPEED_RAPID;
-                mode_switch_requested = 1;
-                break;
-            case 0xA2:
-                current_adc_mode = ADC_CUSTOM_SPEED_HALF;
-                mode_switch_requested = 1;
-                break;
-            case 0xA3:
-                current_adc_mode = ADC_CUSTOM_SPEED_HALF_SLOWER;
-                mode_switch_requested = 1;
-                break;
-            case 0xA4:
-                current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS;
-                mode_switch_requested = 1;
-                break;
-            case 0xA5:
-                current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS_SLOWER;
-                mode_switch_requested = 1;
-                break;
-            case 0xA6:
-                current_adc_mode = ADC_CUSTOM_SPEED_PHOTO;
-                mode_switch_requested = 1;
-                break;
-            case 0xA7: // heartbeat
-                status_code_buffer[0] = 0xFEFC;
-                status_buffer_ready = 1;
-                break;
-            default:
-               break;
-        }
-    }
 }
 
 /**
@@ -477,7 +405,7 @@ static void MX_TIM6_Init(void)
   htim6.Instance = TIM6;
   htim6.Init.Prescaler = 0;
   htim6.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim6.Init.Period = 95;
+  htim6.Init.Period = 18;
   htim6.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim6) != HAL_OK)
   {
@@ -665,6 +593,75 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void SendStatusBuffer() {
+    USB_STATUS_HIGH // set low by transfer complete callback
+    if (CDC_Transmit_HS((uint8_t*)status_code_buffer, STATUS_BUF_SIZE*2) != USBD_OK) {
+        DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
+    } else {
+        status_buffer_ready = 0;
+    }
+}
+
+void SendBuffer(uint8_t status, uint16_t len) {// The buffer just swapped and the old one is ready to send
+    usb_transfer_complete = 0;
+
+    USB_STATUS_LOW
+    USB_STATUS_HIGH // set low by transfer complete callback
+    // Transfer up to BUF_SIZE samples, less the number, in bytes (2 bytes per sample)
+    if (buf_to_fill == buffer0) {
+        status = CDC_Transmit_HS((uint8_t*)buffer1, len);
+    } else {
+        status = CDC_Transmit_HS((uint8_t*)buffer0, len);
+    }
+    if (status != USBD_OK) {
+        // signal we lost a buffer
+        DEBUG_HIGH DEBUG_LOW DEBUG_HIGH DEBUG_LOW
+    } else {
+        usb_transfer_complete = 1;
+        buf_ready = 0;
+        items_remaining = 0;
+    }
+}
+
+void HandleIncomingCommand() {
+    for (uint8_t i=0; i < usb_received_data_len; ++i) {
+        switch (usb_received_data_buf[i]) {
+            case 0xA0: // restart with current ADC mode
+                mode_switch_requested = 1;
+                break;
+            case 0xA1:
+                current_adc_mode = ADC_CUSTOM_SPEED_RAPID;
+                mode_switch_requested = 1;
+                break;
+            case 0xA2:
+                current_adc_mode = ADC_CUSTOM_SPEED_HALF;
+                mode_switch_requested = 1;
+                break;
+            case 0xA3:
+                current_adc_mode = ADC_CUSTOM_SPEED_HALF_SLOWER;
+                mode_switch_requested = 1;
+                break;
+            case 0xA4:
+                current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS;
+                mode_switch_requested = 1;
+                break;
+            case 0xA5:
+                current_adc_mode = ADC_CUSTOM_SPEED_THREEQUARTERS_SLOWER;
+                mode_switch_requested = 1;
+                break;
+            case 0xA6:
+                current_adc_mode = ADC_CUSTOM_SPEED_PHOTO;
+                mode_switch_requested = 1;
+                break;
+            case 0xA7: // heartbeat
+                status_code_buffer[0] = 0xFEFC;
+                status_buffer_ready = 1;
+                break;
+            default:
+                break;
+        }
+    }
+}
 
 void HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef* hadc) {
     HAL_ADC_Stop_DMA(&hadc1);
