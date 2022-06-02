@@ -2,7 +2,7 @@
 import serial
 
 ser = serial.Serial(
-    port='/dev/ttyACM1',
+    port='/dev/ttyACM2',
     baudrate=9600,
     parity=serial.PARITY_NONE,
     stopbits=serial.STOPBITS_ONE,
