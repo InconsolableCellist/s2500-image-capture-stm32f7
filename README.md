@@ -19,3 +19,9 @@ This is firmware for the STM32F769NI to act as a digital image acquisition devic
 * Debugging information is exposed by three pins on the STM32, useful for a logic analyzer to monitor program flow control or error states
 
 * This is likely useful to absolutely no one else
+
+## Photos
+
+My S-2500 SEM:
+
+![My S-2500 SEM](./images/sem1.jpg)
